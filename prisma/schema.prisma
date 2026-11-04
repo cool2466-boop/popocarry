@@ -1,0 +1,145 @@
+datasource db {
+  provider = "sqlite"
+  url = env("DATABASE_URL")
+}
+generator client {
+  provider = "prisma-client-js"
+  output = "../src/generated/client"
+}
+model User {
+  id String @id @default(cuid())
+  email String @unique
+  password String?
+  name String? @default("회원")
+  phone String?
+  city String? @default("")
+  bio String?
+  role String @default("BUYER")
+  avatarUrl String @default("")
+  level String @default("일반 회원")
+  payoutBank String?
+  payoutAccount String?
+  completedDeliveries Int @default(0)
+  totalOrders Int @default(0)
+  passport Passport?
+  orders Order[] @relation("ShopperOrders")
+  identities OAuthIdentity[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+// Existing records are retained; no public API reads or writes this table.
+model Passport {
+  id String @id @default(cuid())
+  userId String @unique
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  passportName String
+  passportNumber String
+  nationality String @default("")
+  expiryDate String
+  isVerified Boolean @default(false)
+  createdAt DateTime @default(now())
+}
+model OAuthIdentity {
+  id String @id @default(cuid())
+  provider String
+  subject String
+  userId String
+  user User @relation(fields: [userId], references: [id])
+  @@unique([provider, subject])
+}
+model Order {
+  id String @id @default(cuid())
+  titleKo String
+  titleEn String
+  originKo String
+  originEn String
+  originFlag String
+  destKo String
+  destEn String
+  priceKrw Int
+  rewardKrw Int
+  imageUrl String
+  productUrl String @default("")
+  quantity Int @default(1)
+  options String @default("")
+  wantedDate String @default("")
+  categoryKo String
+  categoryEn String
+  storeKo String
+  storeEn String
+  status String @default("PENDING")
+  deliveryPin String @default("")
+  pinFailures Int @default(0)
+  pinExpiresAt DateTime?
+  travelerId String?
+  travelerName String?
+  travelerRating String?
+  travelerAvatar String?
+  arrivalDate String?
+  receiptUrl String?
+  shopperId String?
+  shopper User? @relation("ShopperOrders", fields: [shopperId], references: [id])
+  offers Offer[]
+  assets Asset[]
+  attempts PaymentAttempt[]
+  chatMessages ChatMessage[]
+  transactions PaymentTransaction[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model Offer {
+  id String @id @default(cuid())
+  orderId String
+  order Order @relation(fields: [orderId], references: [id])
+  travelerId String
+  travelerName String
+  rewardKrw Int
+  arrivalDate String
+  status String @default("PENDING")
+  createdAt DateTime @default(now())
+  @@unique([orderId, travelerId])
+}
+model ChatMessage {
+  id String @id @default(cuid())
+  orderId String
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  sender String
+  name String
+  text String
+  time String
+  createdAt DateTime @default(now())
+}
+model Asset {
+  id String @id @default(cuid())
+  orderId String
+  order Order @relation(fields: [orderId], references: [id])
+  uploadedBy String
+  contentType String
+  path String
+  createdAt DateTime @default(now())
+}
+model PaymentAttempt {
+  id String @id @default(cuid())
+  orderId String
+  order Order @relation(fields: [orderId], references: [id])
+  amount Int
+  userId String
+  state String @default("READY")
+  paymentKey String? @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model PaymentTransaction {
+  id String @id @default(cuid())
+  orderId String
+  order Order @relation(fields: [orderId], references: [id])
+  type String
+  paymentKey String?
+  amount Int
+  method String @default("카드")
+  tossReceiptUrl String?
+  status String @default("PENDING")
+  payoutBank String?
+  payoutAccount String?
+  createdAt DateTime @default(now())
+}
