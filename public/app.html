@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="ko" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PopoCarry | Peer-to-Peer Global Hand-Carry Platform</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#e6f8f5',
+              100: '#ceece5',
+              500: '#00b594',
+              600: '#0f8c83',
+              700: '#0b716a',
+              900: '#102d3c',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    .badge-pulse { animation: pulseGlow 2s infinite; }
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(1.08); }
+    }
+  </style>
+</head>
+<body class="bg-[#F8FAFC] text-slate-900 font-sans antialiased min-h-full flex flex-col selection:bg-brand-100 selection:text-brand-900">
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/90 transition-all">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <button onclick="navigateView('landing')" class="flex items-center gap-2.5 group cursor-pointer focus:outline-none">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-700 via-brand-600 to-teal-400 flex items-center justify-center text-white shadow-md shadow-brand-500/20 group-hover:scale-105 transition-transform duration-200">
+          <i data-lucide="luggage" class="w-5 h-5"></i>
+        </div>
+        <div class="flex flex-col text-left">
+          <span class="font-black text-xl tracking-tight text-slate-950 flex items-center">
+            Popo<span class="text-brand-600">Carry</span>
+          </span>
+        </div>
+      </button>
+
+      <nav class="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-700">
+        <button onclick="navigateView('create-order')" class="nav-link hover:text-brand-600 transition flex items-center gap-1.5 focus:outline-none py-1">
+          <i data-lucide="shopping-bag" class="w-4 h-4 text-brand-600"></i>
+          <span data-i18n="navOrder">Order an item</span>
+        </button>
+        <button onclick="navigateView('browse-orders')" class="nav-link hover:text-brand-600 transition flex items-center gap-1.5 focus:outline-none py-1">
+          <i data-lucide="search" class="w-4 h-4 text-brand-600"></i>
+          <span data-i18n="navBrowse">Grab orders</span>
+        </button>
+        <button onclick="scrollToHowItWorks()" class="nav-link hover:text-brand-600 transition flex items-center gap-1.5 focus:outline-none py-1 text-slate-500 font-normal">
+          <i data-lucide="help-circle" class="w-4 h-4"></i>
+          <span data-i18n="navHow">How it Works</span>
+        </button>
+      </nav>
+
+      <div class="flex items-center gap-2.5 sm:gap-3">
+        <button onclick="toggleLanguage()" class="px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition flex items-center gap-1">
+          <i data-lucide="globe" class="w-3.5 h-3.5 text-slate-500"></i>
+          <span id="langIndicator">EN</span>
+        </button>
+        <div id="authContainer"></div>
+      </div>
+    </div>
+  </header>
+
+  <main id="appRoot" class="flex-1"></main>
+
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-md text-white text-xs font-semibold px-4 py-3 rounded-2xl shadow-xl border border-slate-800 flex items-center gap-2.5 z-50 transform translate-y-24 opacity-0 transition-all duration-300 pointer-events-none">
+    <i data-lucide="check-circle" class="w-4 h-4 text-brand-400"></i>
+    <span id="toastMsg">Action completed successfully</span>
+  </div>
+
+  <div id="authModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 space-y-5 shadow-2xl relative border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
+      <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1 rounded-xl hover:bg-slate-100 transition">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="text-center space-y-1.5 pt-1">
+        <div class="w-12 h-12 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center mx-auto font-black text-xl shadow-xs">
+          <i data-lucide="shield-check" class="w-6 h-6 text-brand-600"></i>
+        </div>
+        <h3 class="text-lg font-black text-slate-900" data-i18n="authTitle">Welcome to PopoCarry</h3>
+        <p class="text-xs text-slate-500" data-i18n="authSubtitle">Join thousands of verified travelers and global shoppers across Japan & SE Asia.</p>
+      </div>
+
+      <div class="bg-slate-50 p-2.5 rounded-2xl border border-slate-200 text-xs text-left space-y-2">
+        <span class="font-bold text-slate-700 block text-[11px] uppercase tracking-wider" data-i18n="selectRole">Choose Initial Persona</span>
+        <div class="grid grid-cols-2 gap-2">
+          <label class="flex items-center gap-2 p-2 rounded-xl bg-white border border-slate-200 cursor-pointer">
+            <input type="radio" name="authRole" value="BUYER" checked class="text-brand-600 focus:ring-brand-500">
+            <div>
+              <strong class="block text-slate-900 text-xs font-bold" data-i18n="roleShopper">Shopper</strong>
+              <span class="text-[10px] text-slate-500" data-i18n="roleShopperSub">Request goods</span>
+            </div>
+          </label>
+          <label class="flex items-center gap-2 p-2 rounded-xl bg-white border border-slate-200 cursor-pointer">
+            <input type="radio" name="authRole" value="TRAVELER" class="text-brand-600 focus:ring-brand-500">
+            <div>
+              <strong class="block text-slate-900 text-xs font-bold" data-i18n="roleTraveler">Traveler</strong>
+              <span class="text-[10px] text-slate-500" data-i18n="roleTravelerSub">Earn rewards</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="space-y-2.5">
+        <button onclick="handleSocialLogin('KAKAO')" class="w-full py-3 bg-[#FEE500] hover:bg-[#FDD800] text-[#191919] font-bold rounded-xl text-xs flex items-center justify-center gap-2.5 transition shadow-xs cursor-pointer">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+            <path d="M12 3c-5.52 0-10 3.58-10 8 0 2.87 1.89 5.39 4.75 6.72l-.98 3.65c-.1.38.33.68.66.46l4.37-2.9c.39.04.79.07 1.2.07 5.52 0 10-3.58 10-8s-4.48-8-10-8z"/>
+          </svg>
+          <span data-i18n="authKakao">Continue with Kakao</span>
+        </button>
+
+        <button onclick="handleSocialLogin('GOOGLE')" class="w-full py-3 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-xl text-xs flex items-center justify-center gap-2.5 border border-slate-200 transition shadow-xs cursor-pointer">
+          <svg class="w-4 h-4" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          <span data-i18n="authGoogle">Continue with Google</span>
+        </button>
+      </div>
+
+      <div class="flex items-center gap-1.5 justify-center text-[10px] text-slate-400 text-center">
+        <i data-lucide="lock" class="w-3 h-3 text-brand-600"></i>
+        <span>100% Escrow & Identity verification guarantee</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="stripeModal" class="fixed inset-0 z-50 bg-slate-900/65 backdrop-blur-xs hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl relative border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
+      <button onclick="closeStripeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1 rounded-xl hover:bg-slate-100 transition">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-lg bg-teal-50 text-brand-600 flex items-center justify-center font-bold text-xs">
+          <i data-lucide="credit-card" class="w-4 h-4"></i>
+        </div>
+        <div>
+          <span class="text-[10px] font-extrabold uppercase text-brand-600 tracking-wider">Stripe Escrow Simulator</span>
+          <h3 class="text-base font-black text-slate-950" data-i18n="checkoutTitle">Authorize Escrow Payment</h3>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 rounded-2xl p-4 space-y-2 text-xs border border-slate-200/80">
+        <div class="flex justify-between text-slate-600">
+          <span data-i18n="calcItemPrice">Item Retail Price</span>
+          <span id="stripeItemPrice" class="font-bold text-slate-800">₩32,000</span>
+        </div>
+        <div class="flex justify-between text-slate-600">
+          <span data-i18n="calcReward">Traveler Hand-carry Reward</span>
+          <span id="stripeReward" class="font-bold text-slate-800">₩15,000</span>
+        </div>
+        <div class="flex justify-between text-slate-600">
+          <span>PopoCarry Protection Fee (8%)</span>
+          <span id="stripeFee" class="font-bold text-slate-800">₩3,760</span>
+        </div>
+        <div class="pt-2 border-t border-slate-200 flex justify-between items-center text-sm font-black text-slate-950">
+          <span data-i18n="calcTotal">Total Escrow Vault</span>
+          <span id="stripeTotal" class="text-brand-600 font-extrabold text-base">₩50,760</span>
+        </div>
+      </div>
+
+      <form onsubmit="submitStripePayment(event)" class="space-y-3.5">
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 mb-1" data-i18n="cardNum">Card Number (Stripe Test)</label>
+          <div class="relative">
+            <input type="text" id="cardInput" value="4242 4242 4242 4242" required class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+            <i data-lucide="credit-card" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Expiration (MM/YY)</label>
+            <input type="text" value="12/28" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">CVC / CVV</label>
+            <input type="text" value="888" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+          </div>
+        </div>
+
+        <div class="flex items-start gap-2 pt-1 text-[11px] text-slate-500 leading-tight">
+          <i data-lucide="lock" class="w-3.5 h-3.5 text-brand-600 shrink-0 mt-0.5"></i>
+          <span data-i18n="escrowGuarantee">Payment will remain locked in PopoCarry escrow until you verify the item and hand over your PIN code.</span>
+        </div>
+
+        <button type="submit" id="btnStripePay" class="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-extrabold text-xs rounded-xl shadow-md shadow-brand-600/25 transition flex items-center justify-center gap-2 cursor-pointer">
+          <i data-lucide="shield-check" class="w-4 h-4"></i>
+          <span data-i18n="btnAuthorize">Authorize Escrow Lock</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div id="disputeSheet" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs hidden flex items-end justify-center">
+    <div class="bg-white rounded-t-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl relative border-t border-slate-200 animate-in slide-in-from-bottom duration-200">
+      <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-2"></div>
+      <div class="flex items-start justify-between">
+        <div>
+          <span class="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Escrow Freeze Request</span>
+          <h3 class="text-base font-black text-slate-900" data-i18n="disputeTitle">Report an Issue with Delivery</h3>
+        </div>
+        <button onclick="closeDisputeSheet()" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-500" data-i18n="disputeDesc">Filing an issue will immediately pause automatic escrow payout and flag our dispute team for manual inspection.</p>
+
+      <div class="space-y-2 text-xs">
+        <button onclick="submitDispute('Item not delivered by scheduled date')" class="w-full text-left p-3.5 rounded-xl border border-slate-200 hover:border-brand-500 hover:bg-slate-50 font-semibold transition flex justify-between items-center cursor-pointer">
+          <span data-i18n="dispReason1">Item was not delivered on arrival date</span>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+        </button>
+        <button onclick="submitDispute('Store receipt price mismatch')" class="w-full text-left p-3.5 rounded-xl border border-slate-200 hover:border-brand-500 hover:bg-slate-50 font-semibold transition flex justify-between items-center cursor-pointer">
+          <span data-i18n="dispReason2">Receipt uploaded does not match retail store price</span>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+        </button>
+        <button onclick="submitDispute('Damaged packaging or wrong item')" class="w-full text-left p-3.5 rounded-xl border border-slate-200 hover:border-brand-500 hover:bg-slate-50 font-semibold transition flex justify-between items-center cursor-pointer">
+          <span data-i18n="dispReason3">Item is broken, opened, or incorrect variant</span>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const DICTIONARY = {
+      ko: {
+        navOrder: "물품 주문하기",
+        navBrowse: "주문 둘러보기",
+        navHow: "이용방법",
+        authKakao: "카카오로 1초 시작",
+        authGoogle: "Google 계정으로 계속",
+        authTitle: "PopoCarry 시작하기",
+        authSubtitle: "일본 및 동남아 검증된 여행자와 구매자를 잇는 안심 핸드캐리 플랫폼",
+        selectRole: "초기 역할 선택",
+        roleShopper: "쇼퍼 (구매자)",
+        roleShopperSub: "해외 한정판 주문",
+        roleTraveler: "트래블러 (여행자)",
+        roleTravelerSub: "수화물로 수고비 벌기",
+        signIn: "로그인 / 가입",
+        signOut: "로그아웃",
+        heroTitle: "전 세계 원하는 모든 상품,",
+        heroTitleSub: "여행자의 캐리어로 직송받으세요",
+        heroDesc: "현지 매장에서만 파는 일본·동남아 한정판을 여행자에게 부탁하세요. 비싼 국제 배송비 없이 100% 에스크로 안전 결제와 현지 영수증 인증으로 가장 신속하게 배송됩니다.",
+        btnOrderHero: "구매 요청 등록하기",
+        btnTripHero: "여행 일정 등록 & 수고비 확인",
+        badgeTrusted: "Grabr 방식 100% 에스크로 안심 직송",
+        whatIsLabel: "서비스 소개",
+        whatIsTitle: "PopoCarry는 어떤 플랫폼인가요?",
+        whatIsDesc: "해외 매장에서 사고 싶은 물품이 있는 [쇼퍼]와 해당 국가를 여행/출장 중인 [트래블러]를 1:1로 직접 매칭하여, 빈 캐리어 공간을 활용해 합법적이고 안전하게 물품을 전달받는 P2P 마켓플레이스입니다.",
+        howItWorksTitle: "어떻게 이용하나요?",
+        howItWorksSub: "구매자(쇼퍼)와 여행자(트래블러)의 프로세스를 각각 확인해 보세요.",
+        tabShopperView: "쇼퍼 (물품 구매자)",
+        tabTravelerView: "트래블러 (여행자)",
+        step1Shop: "1. 물품 요청 등록",
+        step1ShopDesc: "원하는 물품 사진, 현지 매장/온라인 링크, 희망 수고비를 입력하여 주문을 등록합니다.",
+        step2Shop: "2. 여행자의 제안 수신",
+        step2ShopDesc: "해당 도시로 출국하는 여행자들이 귀국일과 수고비를 제시합니다. 가장 좋은 제안을 채택하세요.",
+        step3Shop: "3. Stripe 안전 에스크로 락",
+        step3ShopDesc: "결제 대금은 여행자에게 바로 가지 않고, PopoCarry 안전 금고에 락(Lock)되어 보관됩니다.",
+        step4Shop: "4. 실물 수령 후 PIN 정산",
+        step4ShopDesc: "물품 상태와 매장 실물 영수증을 확인한 후 4자리 PIN을 여행자에게 전달하면 정산이 종결됩니다.",
+        step1Travel: "1. 경로에 맞는 주문 탐색",
+        step1TravelDesc: "도쿄, 오사카, 방콕 등 본인의 여행지에서 요청된 목록 중 캐리어 여유 공간에 맞는 물품을 찾습니다.",
+        step2Travel: "2. 전달 제안(Offer) 제출",
+        step2TravelDesc: "본인의 귀국 예정일과 희망 배송 수고비를 입력하여 구매자에게 제안을 전송합니다.",
+        step3Travel: "3. 현지 매장에서 실물 구매",
+        step3TravelDesc: "현지 공식 매장에서 정품을 직접 구매한 뒤, 영수증 원본 사진을 앱에 업로드합니다.",
+        step4Travel: "4. 물품 전달 및 정산 환급",
+        step4TravelDesc: "구매자를 만나 물품을 전달하고 PIN 코드를 입력받으면, 상품 원가와 수고비가 즉시 정산 지급됩니다.",
+        safetyHeading: "왜 100% 안전한가요?",
+        safety1Title: "Stripe 에스크로 자금 보관",
+        safety1Desc: "구매자가 물품을 정상 수령하고 PIN을 승인하기 전까지 여행자에게 대금이 절대 지급되지 않습니다.",
+        safety2Title: "현지 매장 실물 영수증 증빙",
+        safety2Desc: "가품 및 부정 청구를 차단하기 위해 출장자가 직접 현지 매장에서 결제한 공식 영수증 검증이 필수입니다.",
+        safety3Title: "4자리 안심 PIN 핸드셰이크",
+        safety3Desc: "물품 실물을 확인한 구매자 본인만이 보유한 고유 PIN 코드를 입력해야만 최종 에스크로 락이 해제됩니다.",
+        recentOrdersTitle: "실시간 핸드캐리 요청 목록",
+        recentOrdersSub: "여행 일정이 맞다면 수고비를 확인하고 바로 전달 제안을 제출하세요.",
+        rewardLabel: "여행자 수고비",
+        btnMakeOffer: "전달 제안하기",
+        btnViewRoom: "실시간 거래실 입장",
+        checkoutTitle: "Stripe 안심 에스크로 결제",
+        calcItemPrice: "상품 현지 원가",
+        calcReward: "여행자 핸드캐리 수고비",
+        calcTotal: "총 에스크로 예치금",
+        cardNum: "카드 번호 (Stripe 테스트)",
+        escrowGuarantee: "실물 수령 후 PIN 번호를 제공하기 전까지 대금은 에스크로 금고에 안전하게 묶여 있습니다.",
+        btnAuthorize: "에스크로 예치 승인하기",
+        disputeTitle: "거래 문제 신고 및 정산 동결",
+        disputeDesc: "신고 접수 시 에스크로 자동 지급이 즉시 정지되며 분쟁 조정팀이 사실관계를 확인합니다.",
+        dispReason1: "도착 예정일까지 물품이 전달되지 않았습니다.",
+        dispReason2: "업로드된 영수증 금액과 상품 가격이 상이합니다.",
+        dispReason3: "물품이 파손되었거나 다른 상품이 전달되었습니다."
+      },
+      en: {
+        navOrder: "Order an item",
+        navBrowse: "Grab orders",
+        navHow: "How it works",
+        authKakao: "Continue with Kakao",
+        authGoogle: "Continue with Google",
+        authTitle: "Welcome to PopoCarry",
+        authSubtitle: "Peer-to-peer hand-carry delivery platform across Japan & Southeast Asia.",
+        selectRole: "Choose Initial Persona",
+        roleShopper: "Shopper",
+        roleShopperSub: "Request foreign goods",
+        roleTraveler: "Traveler",
+        roleTravelerSub: "Earn travel money",
+        signIn: "Sign in / Register",
+        signOut: "Sign out",
+        heroTitle: "Get Any Item Globally,",
+        heroTitleSub: "Delivered in Traveler's Luggage",
+        heroDesc: "Request store-exclusive items from Japan & SE Asia. Travelers buy locally and deliver to your city with 100% Stripe escrow safety and physical receipt verification.",
+        btnOrderHero: "Create Order Request",
+        btnTripHero: "Browse Orders to Deliver",
+        badgeTrusted: "Grabr-Style 100% Escrow Protection",
+        whatIsLabel: "Platform Overview",
+        whatIsTitle: "What is PopoCarry?",
+        whatIsDesc: "PopoCarry is a peer-to-peer marketplace that connects shoppers looking for exclusive items abroad with verified travelers flying along that route with spare luggage space.",
+        howItWorksTitle: "How Does PopoCarry Work?",
+        howItWorksSub: "Explore the step-by-step workflow for both shoppers and travelers.",
+        tabShopperView: "For Shoppers",
+        tabTravelerView: "For Travelers",
+        step1Shop: "1. Create Order Request",
+        step1ShopDesc: "Paste product URL or upload photos, set item retail price and proposed traveler delivery reward.",
+        step2Shop: "2. Receive Traveler Offers",
+        step2ShopDesc: "Travelers heading your way propose delivery dates and fees. Accept the best traveler offer.",
+        step3Shop: "3. Stripe Escrow Vault Lock",
+        step3ShopDesc: "Funds are securely locked in PopoCarry escrow. The traveler does not get paid until you confirm receipt.",
+        step4Shop: "4. Receive Item & Share PIN",
+        step4ShopDesc: "Inspect your item and store receipt in person. Give your 4-digit PIN to release funds to the traveler.",
+        step1Travel: "1. Find Requests on Your Route",
+        step1TravelDesc: "Browse orders requested in Tokyo, Bangkok, Singapore, etc., that easily fit in your suitcase.",
+        step2Travel: "2. Submit Delivery Offer",
+        step2TravelDesc: "Specify your arrival date and requested reward. Once the shopper accepts, funds are locked in escrow.",
+        step3Travel: "3. Buy at Official Store",
+        step3TravelDesc: "Purchase the item during your trip using your own funds and upload the official store receipt photo.",
+        step4Travel: "4. Hand-deliver & Get Reimbursed",
+        step4TravelDesc: "Meet the shopper, enter their delivery PIN, and your item reimbursement plus reward are transferred.",
+        safetyHeading: "Why is PopoCarry 100% Safe?",
+        safety1Title: "Stripe Escrow Vault",
+        safety1Desc: "Shopper payments are locked in platform custody and cannot be claimed until the physical item is approved.",
+        safety2Title: "Store Receipt Verification",
+        safety2Desc: "Travelers must upload physical cash/card register receipts to guarantee product authenticity and pricing.",
+        safety3Title: "4-Digit Handshake PIN",
+        safety3Desc: "Only the shopper holds the secret delivery PIN required to authorize final payout release to traveler.",
+        recentOrdersTitle: "Live Hand-Carry Orders",
+        recentOrdersSub: "Traveling soon? Pick up items along your journey and earn money.",
+        rewardLabel: "Traveler Reward",
+        btnMakeOffer: "Make Delivery Offer",
+        btnViewRoom: "Open Active Trade Room",
+        checkoutTitle: "Stripe Secure Escrow Checkout",
+        calcItemPrice: "Item Retail Price",
+        calcReward: "Traveler Hand-carry Reward",
+        calcTotal: "Total Escrow Vault",
+        cardNum: "Card Number (Stripe Test)",
+        escrowGuarantee: "Funds remain safely locked in escrow until you inspect the item and provide your PIN code.",
+        btnAuthorize: "Authorize Escrow Lock",
+        disputeTitle: "Report Issue & Freeze Escrow",
+        disputeDesc: "Submitting a dispute immediately halts automated escrow settlement for dispute team investigation.",
+        dispReason1: "Item was not delivered on arrival date",
+        dispReason2: "Receipt uploaded does not match retail store price",
+        dispReason3: "Item is broken, opened, or incorrect variant"
+      }
+    };
+
+    const STATE = {
+      lang: localStorage.getItem('popocarry_lang') || 'en',
+      user: JSON.parse(localStorage.getItem('popocarry_user')) || {
+        id: 'usr_guest_01',
+        name: 'Kenji Sato',
+        email: 'kenji.travel@popocarry.com',
+        provider: 'GOOGLE',
+        role: 'BUYER',
+        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80',
+        verified: true,
+        level: 'Lv.2 Passport Verified'
+      },
+      currentView: 'landing',
+      activeHowTab: 'shopper',
+      selectedOrder: null,
+      orders: [
+        {
+          id: 'ord_tokyo_banana_01',
+          title: 'Tokyo Banana 12-Piece Gift Box (Limited Edition)',
+          originCountry: 'Japan · Tokyo',
+          originFlag: '🇯🇵',
+          destCity: 'Seoul (ICN)',
+          priceKrw: 32000,
+          rewardKrw: 15000,
+          imageUrl: 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=600&auto=format&fit=crop&q=80',
+          category: 'Snacks & Sweets',
+          store: 'Narita Airport Terminal 1 Duty-Free',
+          status: 'OFFER_MADE',
+          deliveryPin: '7824',
+          travelerName: 'Sarah Jenkins',
+          travelerRating: '4.9 (38 trips)',
+          travelerAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80',
+          arrivalDate: 'Nov 05, 2026',
+          receiptUrl: null,
+          chatMessages: [
+            { sender: 'TRAVELER', name: 'Sarah Jenkins', text: 'Hi! I am flying Tokyo Narita to Incheon on Nov 5th. I can pick this up at the tax-free store.', time: '10:14 AM' },
+            { sender: 'BUYER', name: 'Kenji Sato', text: 'Sounds wonderful! Please make sure the expiration date is at least 2 weeks out.', time: '10:20 AM' }
+          ]
+        },
+        {
+          id: 'ord_comme_garcons_02',
+          title: 'COMME des GARÇONS PLAY Heart Emblem Cardigan (Black L)',
+          originCountry: 'Japan · Tokyo',
+          originFlag: '🇯🇵',
+          destCity: 'Busan (PUS)',
+          priceKrw: 320000,
+          rewardKrw: 42000,
+          imageUrl: 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=600&auto=format&fit=crop&q=80',
+          category: 'Fashion & Apparel',
+          store: 'Ginza Dover Street Market',
+          status: 'PENDING',
+          deliveryPin: '3192',
+          travelerName: null,
+          travelerRating: null,
+          arrivalDate: null,
+          receiptUrl: null,
+          chatMessages: []
+        },
+        {
+          id: 'ord_suntory_whisky_03',
+          title: 'Suntory Hibiki Japanese Harmony (700ml In-Box)',
+          originCountry: 'Japan · Osaka',
+          originFlag: '🇯🇵',
+          destCity: 'Seoul (GMP)',
+          priceKrw: 185000,
+          rewardKrw: 35000,
+          imageUrl: 'https://images.unsplash.com/photo-1527281400683-1aae777175f8?w=600&auto=format&fit=crop&q=80',
+          category: 'Spirits & Duty-Free',
+          store: 'Kansai Airport Duty-Free',
+          status: 'PENDING',
+          deliveryPin: '5501',
+          travelerName: null,
+          travelerRating: null,
+          arrivalDate: null,
+          receiptUrl: null,
+          chatMessages: []
+        },
+        {
+          id: 'ord_bkk_muaythai_04',
+          title: 'Fairtex Pro Leather Muay Thai Boxing Gloves (12oz Retro)',
+          originCountry: 'Thailand · Bangkok',
+          originFlag: '🇹🇭',
+          destCity: 'Incheon (ICN)',
+          priceKrw: 94000,
+          rewardKrw: 24000,
+          imageUrl: 'https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?w=600&auto=format&fit=crop&q=80',
+          category: 'Sports & Gear',
+          store: 'MBK Center Fairtex Flagship Store',
+          status: 'PENDING',
+          deliveryPin: '8910',
+          travelerName: null,
+          travelerRating: null,
+          arrivalDate: null,
+          receiptUrl: null,
+          chatMessages: []
+        }
+      ]
+    };
+
+    function t(key) {
+      return DICTIONARY[STATE.lang]?.[key] || DICTIONARY['en']?.[key] || key;
+    }
+
+    function toggleLanguage() {
+      STATE.lang = STATE.lang === 'ko' ? 'en' : 'ko';
+      localStorage.setItem('popocarry_lang', STATE.lang);
+      document.getElementById('langIndicator').textContent = STATE.lang.toUpperCase();
+      renderAll();
+      showToast(STATE.lang === 'ko' ? '한국어로 변경되었습니다' : 'Switched to English');
+    }
+
+    function formatCurrency(amountKrw) {
+      if (STATE.lang === 'ko') {
+        return '₩ ' + Math.round(amountKrw).toLocaleString('ko-KR');
+      } else {
+        const usd = (amountKrw / 1350).toFixed(2);
+        return `$${usd} (₩${Math.round(amountKrw).toLocaleString()})`;
+      }
+    }
+
+    function showToast(msg) {
+      const el = document.getElementById('toast');
+      document.getElementById('toastMsg').textContent = msg;
+      el.classList.remove('translate-y-24', 'opacity-0');
+      setTimeout(() => {
+        el.classList.add('translate-y-24', 'opacity-0');
+      }, 3000);
+    }
+
+    function renderAuthBar() {
+      const container = document.getElementById('authContainer');
+      if (STATE.user) {
+        container.innerHTML = `
+          <div class="flex items-center gap-2.5">
+            <button onclick="toggleUserRole()" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold rounded-lg border border-slate-200 bg-white hover:border-brand-500 text-slate-700 transition" title="Click to switch role">
+              <span class="w-2 h-2 rounded-full ${STATE.user.role === 'BUYER' ? 'bg-emerald-500' : 'bg-brand-500'}"></span>
+              <span>${STATE.user.role === 'BUYER' ? 'Shopper' : 'Traveler'}</span>
+            </button>
+            <div class="flex items-center gap-2 pl-2 border-l border-slate-200">
+              <div class="relative cursor-pointer" onclick="toggleUserRole()">
+                <img src="${STATE.user.avatarUrl}" alt="${STATE.user.name}" class="w-8 h-8 rounded-full object-cover border border-slate-200 shadow-2xs">
+                <span class="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-brand-600 border-2 border-white rounded-full flex items-center justify-center text-[7px] text-white font-black" title="Passport Verified">✓</span>
+              </div>
+              <div class="hidden sm:block text-left text-xs leading-none">
+                <strong class="font-extrabold text-slate-900 block truncate max-w-[90px]">${STATE.user.name}</strong>
+                <span class="text-[10px] text-brand-600 font-semibold">${STATE.user.level}</span>
+              </div>
+              <button onclick="handleLogout()" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition" title="${t('signOut')}">
+                <i data-lucide="log-out" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      } else {
+        container.innerHTML = `
+          <button onclick="openAuthModal()" class="bg-slate-950 hover:bg-slate-800 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer">
+            <i data-lucide="log-in" class="w-3.5 h-3.5 text-brand-400"></i>
+            <span>${t('signIn')}</span>
+          </button>
+        `;
+      }
+      lucide.createIcons();
+    }
+
+    function openAuthModal() {
+      document.getElementById('authModal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeAuthModal() {
+      document.getElementById('authModal').classList.add('hidden');
+    }
+
+    function handleSocialLogin(provider) {
+      const selectedRole = document.querySelector('input[name="authRole"]:checked')?.value || 'BUYER';
+      STATE.user = {
+        id: 'usr_' + Date.now().toString().slice(-5),
+        name: provider === 'KAKAO' ? 'Minji Kim (김민지)' : 'Alexander Vance',
+        email: provider === 'KAKAO' ? 'minji.carry@kakao.com' : 'alex.vance@gmail.com',
+        provider: provider,
+        role: selectedRole,
+        avatarUrl: provider === 'KAKAO'
+          ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80'
+          : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80',
+        verified: true,
+        level: 'Lv.2 Passport Verified'
+      };
+      localStorage.setItem('popocarry_user', JSON.stringify(STATE.user));
+      closeAuthModal();
+      renderAuthBar();
+      showToast(t('authTitle') + ' - ' + STATE.user.name);
+    }
+
+    function toggleUserRole() {
+      if (!STATE.user) return;
+      STATE.user.role = STATE.user.role === 'BUYER' ? 'TRAVELER' : 'BUYER';
+      localStorage.setItem('popocarry_user', JSON.stringify(STATE.user));
+      renderAuthBar();
+      showToast(`Switched active persona to ${STATE.user.role === 'BUYER' ? 'Shopper (Order Goods)' : 'Traveler (Earn Delivery Fees)'}`);
+    }
+
+    function handleLogout() {
+      STATE.user = null;
+      localStorage.removeItem('popocarry_user');
+      renderAuthBar();
+      showToast(t('signOut'));
+    }
+
+    function navigateView(viewName, orderId = null) {
+      STATE.currentView = viewName;
+      if (orderId) {
+        STATE.selectedOrder = STATE.orders.find(o => o.id === orderId) || STATE.orders[0];
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      renderCurrentView();
+    }
+
+    function scrollToHowItWorks() {
+      if (STATE.currentView !== 'landing') {
+        navigateView('landing');
+        setTimeout(() => {
+          document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      } else {
+        document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    function renderCurrentView() {
+      const root = document.getElementById('appRoot');
+      if (STATE.currentView === 'landing') {
+        root.innerHTML = renderLandingHTML();
+      } else if (STATE.currentView === 'create-order') {
+        root.innerHTML = renderCreateOrderHTML();
+      } else if (STATE.currentView === 'browse-orders') {
+        root.innerHTML = renderBrowseOrdersHTML();
+      } else if (STATE.currentView === 'trade-room') {
+        root.innerHTML = renderTradeRoomHTML();
+      }
+      lucide.createIcons();
+    }
+
+    function renderLandingHTML() {
+      const activeOrder = STATE.orders[0];
+      return `
+        <section class="relative pt-12 pb-20 border-b border-slate-200/70 bg-gradient-to-b from-brand-50/50 via-white to-white overflow-hidden">
+          <div class="max-w-6xl mx-auto px-4 sm:px-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+              <div class="lg:col-span-7 space-y-5 text-center lg:text-left">
+                <div class="inline-flex items-center gap-2 bg-brand-100/70 border border-brand-200 text-brand-900 px-3.5 py-1.5 rounded-full text-xs font-bold shadow-2xs">
+                  <span class="w-2 h-2 rounded-full bg-brand-500 badge-pulse"></span>
+                  <span>${t('badgeTrusted')}</span>
+                </div>
+                <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-950 tracking-tight leading-[1.12]">
+                  ${t('heroTitle')}<br>
+                  <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-700 via-brand-600 to-teal-500">${t('heroTitleSub')}</span>
+                </h1>
+                <p class="text-sm sm:text-base text-slate-600 max-w-xl mx-auto lg:mx-0 leading-relaxed font-normal">
+                  ${t('heroDesc')}
+                </p>
+                <div class="pt-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3">
+                  <button onclick="navigateView('create-order')" class="w-full sm:w-auto bg-brand-600 hover:bg-brand-700 text-white font-extrabold text-sm px-7 py-4 rounded-2xl transition shadow-lg shadow-brand-600/25 flex items-center justify-center gap-2 cursor-pointer">
+                    <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+                    <span>${t('btnOrderHero')}</span>
+                  </button>
+                  <button onclick="navigateView('browse-orders')" class="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-sm px-7 py-4 rounded-2xl transition shadow-md flex items-center justify-center gap-2 cursor-pointer">
+                    <i data-lucide="plane" class="w-4 h-4 text-brand-400"></i>
+                    <span>${t('btnTripHero')}</span>
+                  </button>
+                </div>
+                <div class="pt-4 flex flex-wrap items-center justify-center lg:justify-start gap-5 text-xs text-slate-600 font-semibold">
+                  <span class="flex items-center gap-1.5"><i data-lucide="shield-check" class="w-4 h-4 text-brand-600"></i> 100% Stripe Escrow</span>
+                  <span class="flex items-center gap-1.5"><i data-lucide="receipt" class="w-4 h-4 text-brand-600"></i> Physical Store Receipt</span>
+                  <span class="flex items-center gap-1.5"><i data-lucide="key-round" class="w-4 h-4 text-brand-600"></i> 4-Digit Handshake PIN</span>
+                </div>
+              </div>
+
+              <div class="lg:col-span-5">
+                <div class="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-2xl space-y-4 relative">
+                  <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <div class="flex items-center gap-2">
+                      <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                      <span class="text-xs font-black text-slate-900 uppercase tracking-wide">Live Hand-Carry Room</span>
+                    </div>
+                    <span class="text-[11px] font-bold text-brand-700 bg-brand-50 px-2.5 py-0.5 rounded-full border border-brand-200">
+                      ${activeOrder.originCountry} ➔ ${activeOrder.destCity}
+                    </span>
+                  </div>
+
+                  <div class="flex gap-4 items-center">
+                    <img src="${activeOrder.imageUrl}" alt="${activeOrder.title}" class="w-20 h-20 rounded-2xl object-cover border border-slate-100 shrink-0">
+                    <div class="space-y-1">
+                      <span class="text-[10px] font-bold text-slate-400 uppercase">${activeOrder.store}</span>
+                      <h4 class="font-bold text-sm text-slate-900 leading-snug line-clamp-2">${activeOrder.title}</h4>
+                      <div class="text-xs font-extrabold text-brand-600">
+                        ${t('rewardLabel')}: ${formatCurrency(activeOrder.rewardKrw)}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="bg-slate-50 rounded-2xl p-3.5 space-y-1.5 text-xs border border-slate-200/60">
+                    <div class="flex justify-between text-slate-500">
+                      <span>Status</span>
+                      <span class="font-bold text-amber-600 flex items-center gap-1">
+                        <i data-lucide="clock" class="w-3.5 h-3.5"></i> Offer Received
+                      </span>
+                    </div>
+                    <div class="flex justify-between text-slate-500">
+                      <span>Traveler</span>
+                      <span class="font-bold text-slate-900">${activeOrder.travelerName} (${activeOrder.travelerRating})</span>
+                    </div>
+                  </div>
+
+                  <button onclick="navigateView('trade-room', '${activeOrder.id}')" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer">
+                    <span>${t('btnViewRoom')}</span>
+                    <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="bg-slate-50 border-b border-slate-200/80 py-16 px-4 sm:px-6">
+          <div class="max-w-4xl mx-auto text-center space-y-3">
+            <span class="text-[11px] font-black tracking-widest uppercase text-brand-700">${t('whatIsLabel')}</span>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-950">${t('whatIsTitle')}</h2>
+            <p class="text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl mx-auto">
+              ${t('whatIsDesc')}
+            </p>
+          </div>
+        </section>
+
+        <section id="how-it-works" class="max-w-6xl mx-auto px-4 sm:px-6 py-20 scroll-mt-10">
+          <div class="text-center space-y-3 mb-10">
+            <span class="text-[11px] font-black tracking-widest uppercase text-brand-700">Workflow Guide</span>
+            <h2 class="text-3xl font-extrabold text-slate-950">${t('howItWorksTitle')}</h2>
+            <p class="text-sm text-slate-500 max-w-lg mx-auto">${t('howItWorksSub')}</p>
+
+            <div class="inline-flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 text-xs font-bold mt-4">
+              <button onclick="switchHowTab('shopper')" class="px-6 py-2.5 rounded-xl transition cursor-pointer ${STATE.activeHowTab === 'shopper' ? 'bg-white text-brand-700 shadow-sm font-black' : 'text-slate-500 hover:text-slate-900'}">
+                ${t('tabShopperView')}
+              </button>
+              <button onclick="switchHowTab('traveler')" class="px-6 py-2.5 rounded-xl transition cursor-pointer ${STATE.activeHowTab === 'traveler' ? 'bg-white text-brand-700 shadow-sm font-black' : 'text-slate-500 hover:text-slate-900'}">
+                ${t('tabTravelerView')}
+              </button>
+            </div>
+          </div>
+
+          ${STATE.activeHowTab === 'shopper' ? `
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 animate-in fade-in duration-200">
+              <div class="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-3">
+                <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center font-black">01</div>
+                <h4 class="font-bold text-sm text-slate-950">${t('step1Shop')}</h4>
+                <p class="text-xs text-slate-500 leading-relaxed">${t('step1ShopDesc')}</p>
+              </div>
+              <div class="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-3">
+                <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center font-black">02</div>
+                <h4 class="font-bold text-sm text-slate-950">${t('step2Shop')}</h4>
+                <p class="text-xs text-slate-500 leading-relaxed">${t('step2ShopDesc')}</p>
+              </div>
+              <div class="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-black">03</div>
+                <h4 class="font-bold text-sm text-slate-950">${t('step3Shop')}</h4>
+                <p class="text-xs text-slate-500 leading-relaxed">${t('step3ShopDesc')}</p>
+              </div>
+              <div class="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-black">04</div>
+                <h4 class="font-bold text-sm text-slate-950">${t('step4Shop')}</h4>
+                <p class="text-xs text-slate-500 leading-relaxed">${t('step4ShopDesc')}</p>
+              </div>
+            </div>
+          ` : `
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 animate-in fade-in duration-200">
+              <div class="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-3">
+                <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center font-black">01</div>
+                <h4 class="font-bold text-sm text-slate-950">${t('step1Travel')}</h4>
+                <p class="text-xs text-slate-500 leading-relaxed">${t('step1TravelDesc')}</p>
+              </div>
+              <div class="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-3">
+                <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center font-black">02</div>
+                <h4 class="font-bold text-sm text-slate-950">${t('step2Travel')}</h4>
+                <p class="text-xs text-slate-500 leading-relaxed">${t('step2TravelDesc')}</p>
+              </div>
+              <div class="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-black">03</div>
+                <h4 class="font-bold text-sm text-slate-950">${t('step3Travel')}</h4>
+                <p class="text-xs text-slate-500 leading-relaxed">${t('step3TravelDesc')}</p>
+              </div>
+              <div class="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-black">04</div>
+                <h4 class="font-bold text-sm text-slate-950">${t('step4Travel')}</h4>
+                <p class="text-xs text-slate-500 leading-relaxed">${t('step4TravelDesc')}</p>
+              </div>
+            </div>
+          `}
+        </section>
+
+        <section class="bg-brand-900 text-white py-16 px-4 sm:px-6">
+          <div class="max-w-6xl mx-auto space-y-10">
+            <div class="text-center space-y-2">
+              <span class="text-xs font-black tracking-widest uppercase text-brand-500">Verified Platform Protocols</span>
+              <h2 class="text-2xl sm:text-3xl font-extrabold">${t('safetyHeading')}</h2>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div class="bg-slate-800/80 p-6 rounded-2xl border border-slate-700 space-y-2.5">
+                <i data-lucide="lock" class="w-7 h-7 text-brand-500"></i>
+                <h4 class="font-bold text-sm">${t('safety1Title')}</h4>
+                <p class="text-xs text-slate-300 leading-relaxed">${t('safety1Desc')}</p>
+              </div>
+              <div class="bg-slate-800/80 p-6 rounded-2xl border border-slate-700 space-y-2.5">
+                <i data-lucide="receipt" class="w-7 h-7 text-brand-500"></i>
+                <h4 class="font-bold text-sm">${t('safety2Title')}</h4>
+                <p class="text-xs text-slate-300 leading-relaxed">${t('safety2Desc')}</p>
+              </div>
+              <div class="bg-slate-800/80 p-6 rounded-2xl border border-slate-700 space-y-2.5">
+                <i data-lucide="key-round" class="w-7 h-7 text-brand-500"></i>
+                <h4 class="font-bold text-sm">${t('safety3Title')}</h4>
+                <p class="text-xs text-slate-300 leading-relaxed">${t('safety3Desc')}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="max-w-6xl mx-auto px-4 sm:px-6 py-16">
+          <div class="flex justify-between items-end mb-8">
+            <div>
+              <h2 class="text-2xl font-black text-slate-900">${t('recentOrdersTitle')}</h2>
+              <p class="text-xs text-slate-500 mt-1">${t('recentOrdersSub')}</p>
+            </div>
+            <button onclick="navigateView('browse-orders')" class="text-xs font-bold text-brand-700 hover:text-brand-800 flex items-center gap-1 cursor-pointer">
+              <span>View all orders</span>
+              <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
+            ${STATE.orders.map(order => `
+              <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs hover:border-brand-500 hover:shadow-md transition flex flex-col justify-between">
+                <div>
+                  <div class="relative">
+                    <img src="${order.imageUrl}" alt="${order.title}" class="w-full h-40 object-cover">
+                    <span class="absolute top-2.5 left-2.5 bg-slate-950/80 backdrop-blur-xs text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      ${order.originFlag} ${order.originCountry.split('·')[0]}
+                    </span>
+                  </div>
+                  <div class="p-4 space-y-2">
+                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">${order.category}</span>
+                    <h5 class="font-bold text-xs text-slate-900 line-clamp-2 leading-snug">${order.title}</h5>
+                    <div class="pt-2 border-t border-slate-100 flex justify-between items-center text-xs">
+                      <span class="text-slate-500 font-medium">${t('rewardLabel')}</span>
+                      <strong class="text-brand-700 font-extrabold">${formatCurrency(order.rewardKrw)}</strong>
+                    </div>
+                  </div>
+                </div>
+                <div class="p-4 pt-0">
+                  <button onclick="navigateView('trade-room', '${order.id}')" class="w-full py-2 bg-slate-100 hover:bg-brand-50 text-slate-800 hover:text-brand-700 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1 cursor-pointer">
+                    <span>${order.status === 'OFFER_MADE' ? t('btnViewRoom') : t('btnMakeOffer')}</span>
+                    <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </section>
+      `;
+    }
+
+    function switchHowTab(tab) {
+      STATE.activeHowTab = tab;
+      renderCurrentView();
+    }
+
+    function renderCreateOrderHTML() {
+      return `
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 py-10 space-y-6">
+          <div class="flex items-center gap-2">
+            <button onclick="navigateView('landing')" class="text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1 cursor-pointer">
+              <i data-lucide="arrow-left" class="w-4 h-4"></i> Back
+            </button>
+          </div>
+
+          <div class="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-sm space-y-6">
+            <div>
+              <span class="text-[11px] font-black uppercase text-brand-600 tracking-wider">Step 1 of 2</span>
+              <h2 class="text-2xl font-black text-slate-950 mt-1">What would you like to buy?</h2>
+              <p class="text-xs text-slate-500 mt-1">Provide product information from any online store or physical shop in Japan / SE Asia.</p>
+            </div>
+
+            <form onsubmit="handleCreateOrderSubmit(event)" class="space-y-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Product Name or Title *</label>
+                <input type="text" id="orderTitle" required placeholder="e.g. Porter Yoshida Tanker Backpack, Black" class="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-xs outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Store / Purchase Location *</label>
+                <select id="orderOrigin" class="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-xs outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition font-medium">
+                  <option value="Japan · Tokyo|🇯🇵|Ginza / Shinjuku / Narita Airport">🇯🇵 Japan · Tokyo (Ginza / Shinjuku / Narita Airport)</option>
+                  <option value="Japan · Osaka|🇯🇵|Umeda / Dotonbori / Kansai Airport">🇯🇵 Japan · Osaka (Umeda / Kansai Airport)</option>
+                  <option value="Thailand · Bangkok|🇹🇭|Siam Paragon / MBK / Suvarnabhumi">🇹🇭 Thailand · Bangkok (Siam Paragon / Suvarnabhumi)</option>
+                  <option value="Vietnam · Da Nang|🇻🇳|Han Market / Vincom Plaza">🇻🇳 Vietnam · Da Nang (Han Market / Airport)</option>
+                  <option value="Singapore|🇸🇬|Orchard Road / Changi Airport">🇸🇬 Singapore (Orchard Road / Changi Airport)</option>
+                </select>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Estimated Retail Price (KRW) *</label>
+                  <input type="number" id="orderPrice" oninput="updatePriceEstimate()" required placeholder="75000" class="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-xs outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Proposed Traveler Reward (KRW) *</label>
+                  <input type="number" id="orderReward" oninput="updatePriceEstimate()" required placeholder="20000" class="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-xs outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Product Image URL (Optional)</label>
+                <input type="url" id="orderImg" placeholder="https://images.unsplash.com/photo-1544816155-12df9643f363?w=600" class="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-xs outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+              </div>
+
+              <div class="p-4 bg-brand-50/50 rounded-2xl border border-brand-200/80 space-y-2 text-xs">
+                <span class="font-black text-brand-900 block text-[11px] uppercase tracking-wider">Estimated Escrow Total</span>
+                <div class="flex justify-between text-slate-600">
+                  <span>Product Price</span>
+                  <span id="estItemPrice" class="font-bold text-slate-800">₩0</span>
+                </div>
+                <div class="flex justify-between text-slate-600">
+                  <span>Traveler Reward</span>
+                  <span id="estReward" class="font-bold text-slate-800">₩0</span>
+                </div>
+                <div class="flex justify-between text-slate-600">
+                  <span>PopoCarry 100% Escrow Fee (8%)</span>
+                  <span id="estFee" class="font-bold text-slate-800">₩0</span>
+                </div>
+                <div class="pt-2 border-t border-brand-200 flex justify-between font-black text-slate-900 text-sm">
+                  <span>Total Escrow Deposit</span>
+                  <span id="estTotal" class="text-brand-700 font-extrabold text-base">₩0</span>
+                </div>
+              </div>
+
+              <button type="submit" class="w-full py-4 bg-brand-600 hover:bg-brand-700 text-white font-extrabold text-xs rounded-xl shadow-md shadow-brand-600/25 transition cursor-pointer">
+                Publish Hand-Carry Order Request
+              </button>
+            </form>
+          </div>
+        </div>
+      `;
+    }
+
+    function updatePriceEstimate() {
+      const price = parseFloat(document.getElementById('orderPrice')?.value) || 0;
+      const reward = parseFloat(document.getElementById('orderReward')?.value) || 0;
+      const fee = Math.round((price + reward) * 0.08);
+      const total = price + reward + fee;
+
+      document.getElementById('estItemPrice').textContent = '₩ ' + price.toLocaleString();
+      document.getElementById('estReward').textContent = '₩ ' + reward.toLocaleString();
+      document.getElementById('estFee').textContent = '₩ ' + fee.toLocaleString();
+      document.getElementById('estTotal').textContent = '₩ ' + total.toLocaleString();
+    }
+
+    function handleCreateOrderSubmit(e) {
+      e.preventDefault();
+      const title = document.getElementById('orderTitle').value;
+      const originParts = document.getElementById('orderOrigin').value.split('|');
+      const price = parseFloat(document.getElementById('orderPrice').value) || 50000;
+      const reward = parseFloat(document.getElementById('orderReward').value) || 15000;
+      const img = document.getElementById('orderImg').value.trim() || 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=600&auto=format&fit=crop&q=80';
+
+      const newOrder = {
+        id: 'ord_' + Date.now().toString().slice(-6),
+        title: title,
+        originCountry: originParts[0],
+        originFlag: originParts[1],
+        destCity: 'Seoul (ICN)',
+        priceKrw: price,
+        rewardKrw: reward,
+        imageUrl: img,
+        category: 'Traveler Pick',
+        store: originParts[2] || 'Official Retail Store',
+        status: 'PENDING',
+        deliveryPin: Math.floor(1000 + Math.random() * 9000).toString(),
+        travelerName: null,
+        travelerRating: null,
+        arrivalDate: null,
+        receiptUrl: null,
+        chatMessages: [
+          { sender: 'BUYER', name: STATE.user ? STATE.user.name : 'Shopper', text: `Order published for ${title}. Ready to receive delivery offers!`, time: 'Just now' }
+        ]
+      };
+
+      STATE.orders.unshift(newOrder);
+      showToast('Order request published successfully!');
+      navigateView('trade-room', newOrder.id);
+    }
+
+    function renderBrowseOrdersHTML() {
+      return `
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-10 space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <span class="text-[11px] font-black uppercase text-brand-600 tracking-wider">Earn Traveler Rewards</span>
+              <h2 class="text-2xl font-black text-slate-950">Grab Open Orders</h2>
+              <p class="text-xs text-slate-500 mt-0.5">Filter by origin country and pick orders matching your next flight.</p>
+            </div>
+            <button onclick="navigateView('create-order')" class="px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 self-start cursor-pointer">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              <span>Post Request</span>
+            </button>
+          </div>
+
+          <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+            <button class="px-3.5 py-1.5 rounded-full text-xs font-bold bg-brand-600 text-white shadow-2xs">All Routes</button>
+            <button class="px-3.5 py-1.5 rounded-full text-xs font-bold bg-white border border-slate-200 text-slate-600 hover:border-brand-500 transition">🇯🇵 Japan</button>
+            <button class="px-3.5 py-1.5 rounded-full text-xs font-bold bg-white border border-slate-200 text-slate-600 hover:border-brand-500 transition">🇹🇭 Thailand</button>
+            <button class="px-3.5 py-1.5 rounded-full text-xs font-bold bg-white border border-slate-200 text-slate-600 hover:border-brand-500 transition">🇻🇳 Vietnam</button>
+            <button class="px-3.5 py-1.5 rounded-full text-xs font-bold bg-white border border-slate-200 text-slate-600 hover:border-brand-500 transition">🇸🇬 Singapore</button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            ${STATE.orders.map(order => `
+              <div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs hover:border-brand-500 hover:shadow-lg transition p-5 flex flex-col justify-between">
+                <div class="space-y-3">
+                  <div class="relative">
+                    <img src="${order.imageUrl}" alt="${order.title}" class="w-full h-44 object-cover rounded-2xl">
+                    <span class="absolute top-2.5 left-2.5 bg-slate-900/80 backdrop-blur-xs text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full">
+                      ${order.originFlag} ${order.originCountry}
+                    </span>
+                    <span class="absolute top-2.5 right-2.5 bg-white/95 text-slate-800 text-[10px] font-black px-2 py-0.5 rounded-md shadow-2xs">
+                      ${order.destCity}
+                    </span>
+                  </div>
+
+                  <div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">${order.store}</span>
+                    <h4 class="font-extrabold text-sm text-slate-950 line-clamp-2 leading-snug">${order.title}</h4>
+                  </div>
+
+                  <div class="p-3 bg-slate-50 rounded-xl space-y-1 text-xs border border-slate-100">
+                    <div class="flex justify-between text-slate-500">
+                      <span>Retail Price</span>
+                      <strong>${formatCurrency(order.priceKrw)}</strong>
+                    </div>
+                    <div class="flex justify-between text-slate-500">
+                      <span>Traveler Reward</span>
+                      <strong class="text-brand-600 font-black text-sm">${formatCurrency(order.rewardKrw)}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="pt-4">
+                  <button onclick="navigateView('trade-room', '${order.id}')" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
+                    <span>${order.status === 'PENDING' ? 'Make Delivery Offer' : 'Open Trade Room'}</span>
+                    <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                  </button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderTradeRoomHTML() {
+      const order = STATE.selectedOrder || STATE.orders[0];
+      const isPending = order.status === 'PENDING';
+      const isOfferMade = order.status === 'OFFER_MADE';
+      const isEscrowed = order.status === 'ESCROWED';
+      const isPurchased = order.status === 'PURCHASED';
+      const isSettled = order.status === 'SETTLED';
+
+      return `
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+          <div class="flex items-center justify-between">
+            <button onclick="navigateView('browse-orders')" class="text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1 cursor-pointer">
+              <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Orders
+            </button>
+            <button onclick="openDisputeSheet()" class="text-xs font-bold text-amber-600 hover:text-amber-700 flex items-center gap-1 cursor-pointer">
+              <i data-lucide="alert-circle" class="w-4 h-4"></i>
+              <span>Report Issue</span>
+            </button>
+          </div>
+
+          <div class="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs space-y-3">
+            <div class="flex justify-between items-center text-[11px] font-bold">
+              <span class="text-brand-600">1. Order Requested</span>
+              <span class="${isOfferMade || isEscrowed || isPurchased || isSettled ? 'text-brand-600' : 'text-slate-400'}">2. Offer Made</span>
+              <span class="${isEscrowed || isPurchased || isSettled ? 'text-brand-600' : 'text-slate-400'}">3. Stripe Escrow Locked</span>
+              <span class="${isPurchased || isSettled ? 'text-brand-600' : 'text-slate-400'}">4. Receipt Verified</span>
+              <span class="${isSettled ? 'text-brand-600' : 'text-slate-400'}">5. PIN Settled</span>
+            </div>
+            <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+              <div class="bg-gradient-to-r from-brand-600 to-teal-400 h-full transition-all duration-500" style="width: ${
+                isSettled ? '100%' : isPurchased ? '80%' : isEscrowed ? '60%' : isOfferMade ? '40%' : '20%'
+              }"></div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+            <div class="md:col-span-7 space-y-5">
+              <div class="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-4">
+                <div class="flex gap-4 items-start">
+                  <img src="${order.imageUrl}" alt="${order.title}" class="w-24 h-24 rounded-2xl object-cover shrink-0 border border-slate-100">
+                  <div class="space-y-1">
+                    <span class="text-[10px] font-bold text-brand-700 bg-brand-50 px-2 py-0.5 rounded-md">
+                      ${order.originFlag} ${order.originCountry} ➔ ${order.destCity}
+                    </span>
+                    <h3 class="font-extrabold text-base text-slate-900 leading-snug">${order.title}</h3>
+                    <p class="text-xs text-slate-500">${order.store}</p>
+                    <div class="text-xs font-bold text-slate-800 pt-1">
+                      Retail Price: <strong>${formatCurrency(order.priceKrw)}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                ${isPending ? `
+                  <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3">
+                    <div class="flex items-center gap-2">
+                      <i data-lucide="plane-takeoff" class="w-4 h-4 text-brand-600"></i>
+                      <strong class="text-xs font-bold text-slate-900">Are you traveling along this route?</strong>
+                    </div>
+                    <p class="text-xs text-slate-500">Submit a delivery offer with your expected arrival date and requested reward.</p>
+                    <button onclick="handleSimulateOffer('${order.id}')" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer">
+                      Submit Delivery Offer (Nov 05, ₩15,000)
+                    </button>
+                  </div>
+                ` : ''}
+
+                ${isOfferMade ? `
+                  <div class="p-4 bg-teal-50/60 rounded-2xl border border-teal-200 space-y-3">
+                    <div class="flex justify-between items-start">
+                      <div class="flex items-center gap-2.5">
+                        <img src="${order.travelerAvatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100'}" class="w-10 h-10 rounded-full object-cover border border-teal-200">
+                        <div>
+                          <strong class="text-xs font-bold text-slate-900 block">${order.travelerName || 'Sarah Jenkins'}</strong>
+                          <span class="text-[11px] text-teal-700">Arrival: <strong>${order.arrivalDate || 'Nov 05, 2026'}</strong></span>
+                        </div>
+                      </div>
+                      <div class="text-right">
+                        <span class="text-[10px] text-slate-500 block">Proposed Reward</span>
+                        <strong class="text-brand-700 text-sm font-black">${formatCurrency(order.rewardKrw)}</strong>
+                      </div>
+                    </div>
+                    <button onclick="openStripeModal('${order.id}')" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-extrabold text-xs rounded-xl shadow-md shadow-brand-600/25 transition flex items-center justify-center gap-2 cursor-pointer">
+                      <i data-lucide="lock" class="w-4 h-4"></i>
+                      <span>Accept Offer & Authorize Stripe Escrow</span>
+                    </button>
+                  </div>
+                ` : ''}
+
+                ${isEscrowed ? `
+                  <div class="p-4 bg-amber-50 rounded-2xl border border-amber-200 space-y-3">
+                    <div class="flex items-center gap-2 text-amber-900 font-bold text-xs">
+                      <i data-lucide="receipt" class="w-4 h-4 text-amber-600"></i>
+                      <span>Awaiting Physical Store Receipt Upload</span>
+                    </div>
+                    <p class="text-xs text-amber-800 leading-relaxed">
+                      Funds are locked in Stripe escrow. The traveler must now buy the item in person and upload the official store register receipt.
+                    </p>
+                    <button onclick="handleSimulateReceipt('${order.id}')" class="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
+                      <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+                      <span>[Traveler Action] Upload Store Register Receipt</span>
+                    </button>
+                  </div>
+                ` : ''}
+
+                ${isPurchased || isSettled ? `
+                  <div class="p-4 bg-emerald-50 rounded-2xl border border-emerald-200 flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold shrink-0">
+                      <i data-lucide="check-circle" class="w-5 h-5"></i>
+                    </div>
+                    <div class="text-xs">
+                      <strong class="text-emerald-950 font-bold block">Physical Store Receipt Verified</strong>
+                      <span class="text-emerald-700">Official cash register receipt archived. Item is ready for hand-carry delivery.</span>
+                    </div>
+                  </div>
+                ` : ''}
+              </div>
+
+              <div class="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs space-y-3">
+                <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                  <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <i data-lucide="message-square" class="w-4 h-4 text-brand-600"></i>
+                    <span>Order Coordination Chat</span>
+                  </span>
+                  <span class="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full">Encrypted</span>
+                </div>
+
+                <div id="chatBox" class="h-44 overflow-y-auto space-y-2.5 p-2 bg-slate-50 rounded-2xl border border-slate-100 text-xs">
+                  ${order.chatMessages.map(msg => `
+                    <div class="flex flex-col ${msg.sender === 'BUYER' ? 'items-end' : 'items-start'}">
+                      <span class="text-[9px] text-slate-400 font-bold px-1">${msg.name} · ${msg.time}</span>
+                      <div class="p-2.5 rounded-2xl max-w-[85%] ${msg.sender === 'BUYER' ? 'bg-brand-600 text-white rounded-tr-none' : 'bg-white border border-slate-200 text-slate-800 rounded-tl-none'}">
+                        ${msg.text}
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+
+                <form onsubmit="handleSendChat(event, '${order.id}')" class="flex gap-2">
+                  <input type="text" id="chatInput" placeholder="Message traveler (e.g. airport meetup spot)..." class="flex-1 p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+                  <button type="submit" class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition cursor-pointer">Send</button>
+                </form>
+              </div>
+            </div>
+
+            <div class="md:col-span-5 space-y-5">
+              <div class="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs space-y-4">
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Security Handshake</span>
+                  <span class="text-[10px] font-bold text-brand-700 bg-brand-50 px-2 py-0.5 rounded-full">PIN Required</span>
+                </div>
+
+                <div class="p-5 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-white border-2 border-dashed border-amber-300 rounded-2xl text-center space-y-1">
+                  <span class="text-[10px] text-amber-800 font-bold uppercase tracking-wider block">Buyer Delivery PIN</span>
+                  <strong class="text-3xl font-mono font-black text-amber-950 tracking-widest block">${order.deliveryPin}</strong>
+                  <p class="text-[10px] text-amber-700 leading-tight pt-1">
+                    Keep this secret! Only share this PIN after you inspect the physical item and store receipt in person.
+                  </p>
+                </div>
+
+                ${!isSettled ? `
+                  <div class="space-y-2 pt-2">
+                    <label class="block text-[11px] font-bold text-slate-700">Enter PIN upon physical hand-over:</label>
+                    <div class="flex gap-2">
+                      <input type="text" id="pinAttempt" maxlength="4" placeholder="${order.deliveryPin}" class="flex-1 p-2.5 border border-slate-200 rounded-xl text-center font-mono font-black text-sm uppercase outline-none focus:ring-2 focus:ring-brand-500">
+                      <button onclick="handleVerifyPin('${order.id}')" class="px-4 py-2.5 bg-slate-950 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition cursor-pointer">
+                        Verify PIN
+                      </button>
+                    </div>
+                  </div>
+                ` : `
+                  <div class="p-4 bg-emerald-50 rounded-2xl border border-emerald-200 text-center space-y-1">
+                    <span class="text-emerald-700 font-extrabold text-xs block">✓ Escrow Settlement Complete</span>
+                    <p class="text-[11px] text-emerald-600">Traveler payout released and archived to balance.</p>
+                  </div>
+                `}
+
+                <div class="pt-4 border-t border-slate-100 space-y-2 text-xs">
+                  <span class="font-bold text-slate-700 block text-[11px]">Escrow Deposit Breakdown</span>
+                  <div class="flex justify-between text-slate-500">
+                    <span>Item Price</span>
+                    <strong class="text-slate-800">${formatCurrency(order.priceKrw)}</strong>
+                  </div>
+                  <div class="flex justify-between text-slate-500">
+                    <span>Traveler Reward</span>
+                    <strong class="text-slate-800">${formatCurrency(order.rewardKrw)}</strong>
+                  </div>
+                  <div class="flex justify-between text-slate-500">
+                    <span>Escrow Fee (8%)</span>
+                    <strong class="text-slate-800">${formatCurrency(Math.round((order.priceKrw + order.rewardKrw) * 0.08))}</strong>
+                  </div>
+                  <div class="pt-1.5 border-t border-slate-100 flex justify-between font-black text-slate-900 text-sm">
+                    <span>Total Custody</span>
+                    <strong class="text-brand-700">${formatCurrency(Math.round((order.priceKrw + order.rewardKrw) * 1.08))}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function handleSimulateOffer(orderId) {
+      const order = STATE.orders.find(o => o.id === orderId);
+      if (!order) return;
+
+      order.status = 'OFFER_MADE';
+      order.travelerName = STATE.user ? STATE.user.name : 'Alexander Vance';
+      order.travelerRating = '5.0 (42 trips)';
+      order.arrivalDate = 'Nov 06, 2026';
+      order.chatMessages.push({
+        sender: 'TRAVELER',
+        name: order.travelerName,
+        text: 'I submitted a delivery offer. I will be in Tokyo Ginza and can bring this on Nov 06!',
+        time: 'Just now'
+      });
+
+      renderCurrentView();
+      showToast('Delivery offer submitted to shopper!');
+    }
+
+    function openStripeModal(orderId) {
+      const order = STATE.orders.find(o => o.id === orderId);
+      if (!order) return;
+
+      const fee = Math.round((order.priceKrw + order.rewardKrw) * 0.08);
+      const total = order.priceKrw + order.rewardKrw + fee;
+
+      document.getElementById('stripeItemPrice').textContent = formatCurrency(order.priceKrw);
+      document.getElementById('stripeReward').textContent = formatCurrency(order.rewardKrw);
+      document.getElementById('stripeFee').textContent = formatCurrency(fee);
+      document.getElementById('stripeTotal').textContent = formatCurrency(total);
+
+      document.getElementById('stripeModal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeStripeModal() {
+      document.getElementById('stripeModal').classList.add('hidden');
+    }
+
+    function submitStripePayment(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btnStripePay');
+      btn.innerHTML = `<span class="animate-spin inline-block mr-2">◌</span> Authorizing with Stripe...`;
+      btn.disabled = true;
+
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="shield-check" class="w-4 h-4"></i> <span>Authorize Escrow Lock</span>`;
+        closeStripeModal();
+
+        const order = STATE.selectedOrder || STATE.orders[0];
+        order.status = 'ESCROWED';
+        order.chatMessages.push({
+          sender: 'BUYER',
+          name: STATE.user ? STATE.user.name : 'Shopper',
+          text: 'Stripe escrow payment authorized! Funds are safely locked in PopoCarry custody. Please purchase the item.',
+          time: 'Just now'
+        });
+
+        renderCurrentView();
+        showToast('Payment locked in Stripe Escrow Vault!');
+      }, 900);
+    }
+
+    function handleSimulateReceipt(orderId) {
+      const order = STATE.orders.find(o => o.id === orderId);
+      if (!order) return;
+
+      order.status = 'PURCHASED';
+      order.receiptUrl = 'https://images.unsplash.com/photo-1554415707-9e49fe830848?w=500';
+      order.chatMessages.push({
+        sender: 'TRAVELER',
+        name: order.travelerName || 'Traveler',
+        text: 'Item purchased at official retail store! Official cash register receipt photo uploaded for inspection.',
+        time: 'Just now'
+      });
+
+      renderCurrentView();
+      showToast('Store register receipt photo verified!');
+    }
+
+    function handleVerifyPin(orderId) {
+      const order = STATE.orders.find(o => o.id === orderId);
+      if (!order) return;
+
+      const input = document.getElementById('pinAttempt').value.trim();
+      if (input !== order.deliveryPin) {
+        showToast('PIN does not match! Please check code with buyer.');
+        return;
+      }
+
+      order.status = 'SETTLED';
+      order.chatMessages.push({
+        sender: 'BUYER',
+        name: STATE.user ? STATE.user.name : 'Shopper',
+        text: `PIN verified (${order.deliveryPin}). Package safely received in pristine condition. Funds released!`,
+        time: 'Just now'
+      });
+
+      renderCurrentView();
+      showToast('Delivery finalized! Escrow payout sent to traveler.');
+    }
+
+    function handleSendChat(e, orderId) {
+      e.preventDefault();
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const order = STATE.orders.find(o => o.id === orderId);
+      if (!order) return;
+
+      order.chatMessages.push({
+        sender: STATE.user?.role === 'TRAVELER' ? 'TRAVELER' : 'BUYER',
+        name: STATE.user ? STATE.user.name : 'Member',
+        text: text,
+        time: 'Just now'
+      });
+
+      input.value = '';
+      renderCurrentView();
+    }
+
+    function openDisputeSheet() {
+      document.getElementById('disputeSheet').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeDisputeSheet() {
+      document.getElementById('disputeSheet').classList.add('hidden');
+    }
+
+    function submitDispute(reason) {
+      closeDisputeSheet();
+      const order = STATE.selectedOrder || STATE.orders[0];
+      order.chatMessages.push({
+        sender: 'BUYER',
+        name: 'PopoCarry Resolution Team',
+        text: `[DISPUTE FILED]: "${reason}". Escrow payout has been frozen pending receipt and travel verification.`,
+        time: 'Just now'
+      });
+      renderCurrentView();
+      showToast('Dispute logged! Escrow funds frozen.');
+    }
+
+    function renderAll() {
+      renderAuthBar();
+      renderCurrentView();
+    }
+
+    window.onload = function() {
+      renderAll();
+    };
+  </script>
+</body>
+</html>
